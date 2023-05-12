@@ -74,8 +74,8 @@ if (require.main === module) {
     server.on('stateUpdate', state => {
       if (state === 'CRASHED') console.log('Press Enter to Continue...')
       else if (state === 'STOPPED') {
-        if (eula) console.log('Do you accept the EULA? (Y/[N])')
-        else setTimeout(() => rl.close(), 1000)
+        if (eula) return console.log('Do you accept the EULA? (Y/[N])')
+        setTimeout(() => rl.close(), 1000)
       }
     })
 
@@ -84,6 +84,7 @@ if (require.main === module) {
     const promptCommand = () => {
       rl.question('')
         .then(input => {
+          if (!server.canStop) return rl.close()
           if (!eula) return server.execute(input)
           eula = false
           return server.acceptEula(input.toLowerCase() === 'y')
