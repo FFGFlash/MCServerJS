@@ -36,7 +36,7 @@ function prompt() {
 
 rl.on('close', () => process.exit(0))
 
-server.on('message', message => console.log(message.type, message.content))
+server.on('message', message => console.log(message.content))
 
 server.on('stateUpdate', state => {
   if (state === 'CRASHED') console.log('Press Enter to Continue...')
@@ -68,3 +68,4 @@ mcserver.js [-versions] [--v <version>] [--mn <minMemory>] [--mx <maxMemory>] [-
 - [ ] Forge Server
 - [ ] Fabric Server
 - [ ] Spigot Server
+
