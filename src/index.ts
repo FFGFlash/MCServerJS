@@ -88,7 +88,7 @@ if (require.main === module) {
           eula = false
           return server.acceptEula(input.toLowerCase() === 'y')
         })
-        .catch(err => console.error(err.message))
+        .catch(() => {})
         .finally(promptCommand)
     }
 
@@ -97,7 +97,7 @@ if (require.main === module) {
     server
       .start()
       .then(() => promptCommand())
-      .catch(err => console.error(err))
+      .catch(() => {})
   }
 }
 
