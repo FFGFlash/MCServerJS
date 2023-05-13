@@ -1,8 +1,11 @@
 import { createInterface } from 'readline/promises'
 import Server from './server'
 import { IOptions } from './shared'
+import Versions from './versions'
 
 export { default as Server } from './server'
+export { default as Versions } from './versions'
+export { default as Properties } from './properties'
 
 if (require.main === module) {
   const parseArg = (arg: string) => {
@@ -41,19 +44,50 @@ if (require.main === module) {
   )
 
   if (args.versions) {
-    Server.Versions.then(versions => {
-      console.log('Latest Release:', versions.latest.release)
-      console.log('Latest Snapshot:', versions.latest.snapshot)
-      console.log('\n')
-      console.log('--- Releases ---')
-      versions.versions
+    Versions.servers.then(versions => {
+      const releases = versions.versions
         .filter(v => v.type === 'release')
-        .forEach(v => console.log('Release', v.id))
-      console.log('\n')
-      console.log('--- Snapshots ---')
-      versions.versions
-        .filter(v => v.type === 'release')
-        .forEach(v => console.log('Snapshot', v.id))
+        .map(v => `Release ${v.id}`)
+      const snapshots = versions.versions
+        .filter(v => v.type === 'snapshot')
+        .map(v => `Snapshot ${v.id}`)
+
+      const maxLen = Math.max(releases.length, snapshots.length)
+      const longRelease = releases.reduce(
+        (prev, release) => Math.max(release.length, prev),
+        0
+      )
+      const longSnapshot = snapshots.reduce(
+        (prev, snapshot) => Math.max(snapshot.length, prev),
+        0
+      )
+
+      const releasesHeader = 'Releases'
+      const releasesHeaderBar = (longRelease - releasesHeader.length - 2) / 2
+      const snapshotHeader = 'Snapshots'
+      const snapshotHeaderBar = (longSnapshot - snapshotHeader.length - 2) / 2
+      console.log(
+        '|',
+        ''.padEnd(Math.floor(releasesHeaderBar), '-'),
+        releasesHeader,
+        ''.padEnd(Math.ceil(releasesHeaderBar), '-'),
+        '|',
+        ''.padEnd(Math.floor(snapshotHeaderBar), '-'),
+        snapshotHeader,
+        ''.padEnd(Math.ceil(snapshotHeaderBar), '-'),
+        '|'
+      )
+      for (let i = 0; i < maxLen; i++) {
+        const release = releases[i] || ''
+        const snapshot = snapshots[i] || ''
+        console.log(
+          '|',
+          release.padEnd(longRelease),
+          '|',
+          snapshot.padEnd(longSnapshot),
+          '|'
+        )
+      }
     })
   } else {
     let version = args.v ? String(args.v) : undefined
@@ -85,7 +119,26 @@ if (require.main === module) {
       rl.question('')
         .then(input => {
           if (!server.canStop) return rl.close()
-          if (!eula) return server.execute(input)
+          if (!eula) {
+            const args = input.split(' ')
+            const cmd = args.shift()?.toLowerCase()
+            if (cmd === 'setprop') {
+              server.log(`Setting property ${args[0]} to ${args[1]}`)
+              return server.properties
+                .setProperty(args[0], args[1])
+                .then(() => server.execute('reload'))
+            } else if (cmd === 'getprop') {
+              return server.properties.getProperty(args[0]).then(prop => {
+                if (!prop)
+                  server.warn(
+                    `Couldn't find a property by the name '${args[0]}'`
+                  )
+                else server.log(`${prop.name} is ${prop.value}`)
+                return
+              })
+            }
+            return server.execute(input)
+          }
           eula = false
           return server.acceptEula(input.toLowerCase() === 'y')
         })

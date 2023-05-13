@@ -12,21 +12,8 @@ import {
   ServerStatus
 } from './shared'
 import { download, request } from './request'
-
-export interface IVersion {
-  id: string
-  type: 'release' | 'snapshot'
-  url: string
-  time: string
-  releaseTime: string
-  sha1: string
-  complianceLevel: 0 | 1
-}
-
-export interface IVersions {
-  latest: { release: string; snapshot: string }
-  versions: IVersion[]
-}
+import Versions, { IVersion, IVersionManifest } from './versions'
+import Properties from './properties'
 
 export interface ServerEvents {
   stateUpdate: (state: ServerStatus) => void
@@ -52,9 +39,10 @@ export class Server extends EventEmitter {
   path: string
   #state: ServerStatus = 'STOPPED'
   #logs: IServerLog[] = []
+  properties: Properties
 
   private process?: ChildProcess
-  static #Versions?: Promise<IVersions>
+  static #Versions?: Promise<IVersionManifest>
   static PrefixPattern = /(\[\d+:\d+:\d+\] \[(?:ServerMain|Server thread)\/)/g
   static DonePattern =
     /\[\d+:\d+:\d+\] \[(ServerMain|Server thread)\/INFO\]: Done \([^)]+\)!/i
@@ -64,8 +52,6 @@ export class Server extends EventEmitter {
     /\[\d+:\d+:\d+\] \[(ServerMain|Server thread)\/INFO\]: You need to agree to the EULA in order to run the server\. Go to eula.txt for more info\.(?:\n|\r\n)?/i
   static WarnPattern = /\/WARN\]/i
   static ErrorPattern = /\/ERROR\]/i
-  static PropertyPattern = /^\s*(?!#)(.+)=(.*)$/i
-  static CommentPattern = /^#.+$/i
 
   constructor(version?: string, options?: Partial<IOptions>) {
     super()
@@ -87,6 +73,7 @@ export class Server extends EventEmitter {
     this.maxMemory = maxMemory
     this.javaPath = javaPath
     this.path = path
+    this.properties = new Properties(this.prop)
   }
 
   async start() {
@@ -97,7 +84,7 @@ export class Server extends EventEmitter {
       this.log('Attempting to start server...')
 
       //* Get the list of versions
-      const versions = await Server.Versions
+      const versions = await Versions.manifest
 
       //* Get the version info for the server version
       if (!this.version) this.version = versions.latest.release
@@ -118,14 +105,12 @@ export class Server extends EventEmitter {
       if (!existsSync(jar)) {
         this.warn('Downloading server jar...')
         //* Fetch the version from the versionInfo
-        const version = await request(versionInfo.url)
-
-        if ('status' in version) {
-          this.state = 'CRASHED'
-          throw new Error('Failed to download version from version info')
-        }
-
+        const version = await request<IVersion>(versionInfo.url)
         try {
+          if ('status' in version)
+            throw new Error('Failed to download version from version info')
+          if (!version.downloads.server)
+            throw new Error("The version provided doesn't have a server jar")
           await download(version.downloads.server.url, jar)
         } catch (err) {
           this.state = 'CRASHED'
@@ -160,6 +145,11 @@ export class Server extends EventEmitter {
           if (Server.DonePattern.test(message)) {
             this.log('Server is running...')
             this.state = 'RUNNING'
+            this.log('Loading properties...')
+            this.properties
+              .loadProperties()
+              .then(() => this.log('Successfully loaded properties.'))
+              .catch(() => this.error('Failed to load properties.'))
           } else if (Server.StopPattern.test(message)) {
             this.log('Server is stopping...')
             this.state = 'STOPPING'
@@ -312,15 +302,6 @@ export class Server extends EventEmitter {
 
   get canStop() {
     return this.state === 'RUNNING'
-  }
-
-  static get Versions() {
-    if (!this.#Versions) {
-      this.#Versions = request(
-        'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
-      )
-    }
-    return this.#Versions
   }
 }
 

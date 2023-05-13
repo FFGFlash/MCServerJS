@@ -2,7 +2,9 @@
 
 MCServerJS is your javascript solution to minecraft servers, this package allows for easy server manipulation using javascript!
 
-## Example
+## Examples
+
+### Server Example
 
 The following example will make a fully functional server that can accept terminal input for executing commands and accepting the EULA
 
@@ -26,7 +28,24 @@ function prompt() {
   rl.question('')
     .then(input => {
       if (!server.canStop) return rl.close()
-      if (!eula) return server.execute(input)
+      if (!eula) {
+        const args = input.split(' ')
+        const cmd = args.shift()?.toLowerCase()
+        if (cmd === 'setprop') {
+          server.log(`Setting property ${args[0]} to ${args[1]}`)
+          return server.properties
+            .setProperty(args[0], args[1])
+            .then(() => server.execute('reload'))
+        } else if (cmd === 'getprop') {
+          return server.properties.getProperty(args[0]).then(prop => {
+            if (!prop)
+              server.warn(`Couldn't find a property by the name '${args[0]}'`)
+            else server.log(`${prop.name} is ${prop.value}`)
+            return
+          })
+        }
+        return server.execute(input)
+      }
       eula = false
       return server.acceptEula(input.toLowerCase() === 'y')
     })
@@ -63,7 +82,7 @@ mcserver.js [-versions] [--v <version>] [--mn <minMemory>] [--mx <maxMemory>] [-
 
 - [x] Vanilla Server
 - [x] Command Line Integration
-- [ ] Load `server.properties`
+- [x] Load `server.properties`
 - [ ] Type Checking `server.properties`
 - [ ] Forge Server
 - [ ] Fabric Server
