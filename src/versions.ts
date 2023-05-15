@@ -157,11 +157,15 @@ export default class Versions {
   static get servers(): Promise<IVersionManifest> {
     return this.manifest.then(async manifest => {
       const versionData = await this.getVersionData(manifest)
+      const versions = manifest.versions.filter(
+        info => versionData[info.id].hasServer
+      )
       return {
-        latest: manifest.latest,
-        versions: manifest.versions.filter(
-          info => versionData[info.id].hasServer
-        )
+        latest: {
+          release: versions.find(v => v.type === 'release')?.id || '',
+          snapshot: versions.find(v => v.type === 'snapshot')?.id || ''
+        },
+        versions
       }
     })
   }
@@ -169,11 +173,15 @@ export default class Versions {
   static get serverMappings(): Promise<IVersionManifest> {
     return this.manifest.then(async manifest => {
       const versionData = await this.getVersionData(manifest)
+      const versions = manifest.versions.filter(
+        info => versionData[info.id].hasServerMappings
+      )
       return {
-        latest: manifest.latest,
-        versions: manifest.versions.filter(
-          info => versionData[info.id].hasServerMappings
-        )
+        latest: {
+          release: versions.find(v => v.type === 'release')?.id || '',
+          snapshot: versions.find(v => v.type === 'snapshot')?.id || ''
+        },
+        versions
       }
     })
   }
@@ -181,11 +189,15 @@ export default class Versions {
   static get clientMappings(): Promise<IVersionManifest> {
     return this.manifest.then(async manifest => {
       const versionData = await this.getVersionData(manifest)
+      const versions = manifest.versions.filter(
+        info => versionData[info.id].hasClientMappings
+      )
       return {
-        latest: manifest.latest,
-        versions: manifest.versions.filter(
-          info => versionData[info.id].hasClientMappings
-        )
+        latest: {
+          release: versions.find(v => v.type === 'release')?.id || '',
+          snapshot: versions.find(v => v.type === 'snapshot')?.id || ''
+        },
+        versions
       }
     })
   }
