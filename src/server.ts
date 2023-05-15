@@ -1,4 +1,4 @@
-import { ChildProcess, spawn } from 'child_process'
+import { ChildProcess, exec as execCallback, spawn } from 'child_process'
 import EventEmitter from 'events'
 import { existsSync } from 'fs'
 import { mkdir, readFile, writeFile } from 'fs/promises'
@@ -14,11 +14,31 @@ import {
 import { download, request } from './request'
 import Versions, { IVersion, IVersionManifest } from './versions'
 import Properties from './properties'
+import { promisify } from 'util'
+
+const exec = promisify(execCallback)
+
+export interface IServerVersionInfo {
+  id: string
+  name: string
+  world_version?: number
+  series_id?: string
+  protocol_version?: number
+  pack_version?: {
+    resource?: number
+    data?: number
+  }
+  build_time?: string
+  java_component?: string
+  java_version?: number
+  stable?: boolean
+}
 
 export interface ServerEvents {
   stateUpdate: (state: ServerStatus) => void
   message: (message: IServerLog) => void
   eula: () => void
+  download: (file: string, current: number, total: number) => void
 }
 
 export interface Server {
@@ -42,7 +62,6 @@ export class Server extends EventEmitter {
   properties: Properties
 
   private process?: ChildProcess
-  static #Versions?: Promise<IVersionManifest>
   static PrefixPattern = /(\[\d+:\d+:\d+\] \[(?:ServerMain|Server thread)\/)/g
   static DonePattern =
     /\[\d+:\d+:\d+\] \[(ServerMain|Server thread)\/INFO\]: Done \([^)]+\)!/i
@@ -76,6 +95,68 @@ export class Server extends EventEmitter {
     this.properties = new Properties(this.prop)
   }
 
+  async downloadJar(
+    force = false,
+    progressCallback?: (current: number, total: number) => void
+  ) {
+    if (existsSync(this.jar) && !force) return
+    const versions = await Versions.servers
+    if (!this.version) this.version = versions.latest.release
+    const versionInfo = versions.versions.find(v => v.id === this.version)
+    if (!versionInfo) throw new Error('Unable to find version info.')
+    const version = await request<IVersion>(versionInfo.url)
+    if ('status' in version)
+      throw new Error('Failed to download version from version info')
+    if (!version.downloads.server)
+      throw new Error("The version provided doesn't have a server jar")
+    await download(
+      version.downloads.server.url,
+      this.jar,
+      undefined,
+      progressCallback
+    )
+    await this.getVersionInfo(true)
+  }
+
+  async getVersionInfo(force = false): Promise<IServerVersionInfo | undefined> {
+    const { path, env, info, jar } = this
+    if (!this.version) {
+      const manifest = await Versions.servers
+      this.version = manifest.latest.release
+    }
+    if (!existsSync(jar)) return
+    if (!existsSync(info) || force) {
+      const { stdout } = await exec('jar -xvf server.jar version.json', {
+        env,
+        cwd: path,
+        windowsHide: true
+      })
+      if (!stdout) {
+        const versionInfo = { id: this.version, name: this.version }
+        await writeFile(info, JSON.stringify(versionInfo, null, 2), 'utf-8')
+        return versionInfo
+      }
+    }
+    const content = await readFile(info, 'utf-8')
+    const data = JSON.parse(content) as IServerVersionInfo
+    return data
+  }
+
+  async validateVersion() {
+    const info = await this.getVersionInfo()
+    return this.version === info?.id
+  }
+
+  async hasDatapackSupport() {
+    const info = await this.getVersionInfo()
+    return info?.pack_version?.data !== undefined
+  }
+
+  async hasResourcePackSupport() {
+    const info = await this.getVersionInfo()
+    return info?.pack_version?.resource !== undefined
+  }
+
   async start() {
     const { path, jar, env, args } = this
     try {
@@ -83,35 +164,21 @@ export class Server extends EventEmitter {
       this.state = 'STARTING'
       this.log('Attempting to start server...')
 
-      //* Get the list of versions
-      const versions = await Versions.manifest
-
-      //* Get the version info for the server version
-      if (!this.version) this.version = versions.latest.release
-      const versionInfo = versions.versions.find(v => v.id === this.version)
-
-      if (!versionInfo) {
-        this.state = 'CRASHED'
-        throw new Error('Unable to find version info.')
-      }
-
       //* If the server directory doesn't exist then create the directory
       if (!existsSync(path)) {
         this.warn('Creating server directory...')
         await mkdir(path, { recursive: true })
       }
 
+      const isCorrectVersion = await this.validateVersion()
+
       //* If the jar doesn't exist then download the jar file
-      if (!existsSync(jar)) {
-        this.warn('Downloading server jar...')
-        //* Fetch the version from the versionInfo
-        const version = await request<IVersion>(versionInfo.url)
+      if (!isCorrectVersion) {
+        this.log('Downloading server jar...')
         try {
-          if ('status' in version)
-            throw new Error('Failed to download version from version info')
-          if (!version.downloads.server)
-            throw new Error("The version provided doesn't have a server jar")
-          await download(version.downloads.server.url, jar)
+          await this.downloadJar(true, (cur, tot) =>
+            this.emit('download', jar, cur, tot)
+          )
         } catch (err) {
           this.state = 'CRASHED'
           throw err
@@ -211,11 +278,14 @@ export class Server extends EventEmitter {
   }
 
   async acceptEula(accept: boolean) {
-    if (!accept) return
     await readFile(this.eula, 'utf-8').then(content =>
-      writeFile(this.eula, content.replace('eula=false', 'eula=true'), 'utf-8')
+      writeFile(
+        this.eula,
+        content.replace(/eula=(true|false)/gim, `eula=${accept}`),
+        'utf-8'
+      )
     )
-    return this.start()
+    return accept
   }
 
   error(message: string, prefix = true) {
@@ -277,6 +347,10 @@ export class Server extends EventEmitter {
 
   get jar() {
     return path.join(this.path, 'server.jar')
+  }
+
+  get info() {
+    return path.join(this.path, 'version.json')
   }
 
   get eula() {

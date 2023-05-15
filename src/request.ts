@@ -31,12 +31,24 @@ export async function request<T extends any>(url: string): Promise<T> {
   return data
 }
 
-export function download(url: string, path: string) {
+export function download(
+  url: string,
+  path: string,
+  encoding?: BufferEncoding,
+  progressCallback: (current: number, total: number) => void = () => {}
+) {
   return new Promise<void>((resolve, reject) => {
     getProtocolAdapter(url)
       .get(url, res => {
+        if (encoding) res.setEncoding(encoding)
         const file = createWriteStream(path)
-        res.pipe(file)
+        const total = parseInt(res.headers?.['content-length'] || '0', 10)
+        let current = 0
+        res
+          .on('data', chunk =>
+            progressCallback((current += chunk.length), total)
+          )
+          .pipe(file)
         file.on('finish', () => file.close(() => resolve()))
       })
       .on('error', err => {

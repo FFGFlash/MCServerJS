@@ -103,6 +103,15 @@ if (require.main === module) {
     const server = new Server(version, options)
     let eula = false
 
+    server.on('download', (file, current, total) => {
+      const percent = ((current / total) * 100).toFixed(2)
+      const currentMB = (current / 1048576).toFixed(2)
+      const totalMB = (total / 1048576).toFixed(2)
+      server.log(
+        `Downloading file: ${percent}% (${currentMB}mb / ${totalMB}mb)`
+      )
+    })
+
     server.on('message', message => console.log(message.content))
 
     server.on('stateUpdate', state => {
@@ -118,8 +127,8 @@ if (require.main === module) {
     const promptCommand = () => {
       rl.question('')
         .then(input => {
-          if (!server.canStop) return rl.close()
           if (!eula) {
+            if (!server.canStop) return rl.close()
             const args = input.split(' ')
             const cmd = args.shift()?.toLowerCase()
             if (cmd === 'setprop') {
@@ -140,7 +149,9 @@ if (require.main === module) {
             return server.execute(input)
           }
           eula = false
-          return server.acceptEula(input.toLowerCase() === 'y')
+          return server
+            .acceptEula(input.toLowerCase() === 'y')
+            .then(accept => (accept ? server.start() : rl.close()))
         })
         .catch(() => {})
         .finally(promptCommand)
