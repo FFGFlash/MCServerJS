@@ -9,7 +9,7 @@ MCServerJS is your javascript solution to minecraft servers, this package allows
 The following example will make a fully functional server that can accept terminal input for executing commands and accepting the EULA
 
 ```js
-const { Server } = require('mcserver.js')
+const { Server } = require('@ffgflash/mcserver.js')
 const { createInterface } = require('readline/promises')
 
 const version = '1.19.4'
