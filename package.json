@@ -13,6 +13,7 @@
   "types": "build/index.d.ts",
   "scripts": {
     "start": "npm run build && node .",
+    "prepublish": "npm run build",
     "build": "npx tsc"
   },
   "keywords": [
@@ -31,3 +32,4 @@
     "typescript": "^5.0.4"
   }
 }
+
