@@ -61,7 +61,7 @@ export class Server extends EventEmitter {
   #logs: IServerLog[] = []
   properties: Properties
 
-  private process?: ChildProcess
+  protected process?: ChildProcess
   static PrefixPattern = /(\[\d+:\d+:\d+\] \[(?:ServerMain|Server thread)\/)/g
   static DonePattern =
     /\[\d+:\d+:\d+\] \[(ServerMain|Server thread)\/INFO\]: Done \([^)]+\)!/i
@@ -72,19 +72,18 @@ export class Server extends EventEmitter {
   static WarnPattern = /\/WARN\]/i
   static ErrorPattern = /\/ERROR\]/i
 
+  static DefaultOptions: IOptions = {
+    minMemory: 256,
+    softMaxMemory: 512,
+    maxMemory: 1024,
+    javaPath: DEFAULT_JAVA_PATH,
+    path: './server'
+  }
+
   constructor(version?: string, options?: Partial<IOptions>) {
     super()
     const { minMemory, maxMemory, softMaxMemory, javaPath, path } =
-      Object.assign(
-        {
-          minMemory: 256,
-          softMaxMemory: 512,
-          maxMemory: 1024,
-          javaPath: DEFAULT_JAVA_PATH,
-          path: './server'
-        } as IOptions,
-        options
-      )
+      Object.assign(Server.DefaultOptions, options)
 
     this.version = version
     this.minMemory = minMemory

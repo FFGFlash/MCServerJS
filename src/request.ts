@@ -1,6 +1,6 @@
 import { createWriteStream } from 'fs'
 import { unlink } from 'fs/promises'
-import http from 'http'
+import http, { RequestOptions } from 'http'
 import https from 'https'
 
 const Protocols = { http, https }
@@ -32,15 +32,30 @@ export async function request<T extends any>(url: string): Promise<T> {
 }
 
 export function download(
-  url: string,
+  uri: string,
   path: string,
   encoding?: BufferEncoding,
   progressCallback: (current: number, total: number) => void = () => {}
 ) {
+  const url = new URL(uri)
+  const options: RequestOptions = {
+    hostname: url.hostname,
+    port: url.port,
+    path: url.pathname + url.search,
+    method: 'GET',
+    headers: {
+      'Accept': '*/*',
+      'Referer': 'no-referer',
+      'User-Agent': 'node-fetch',
+      'Accept-Encoding': 'gzip, deflate, br'
+    }
+  }
+
   return new Promise<void>((resolve, reject) => {
-    getProtocolAdapter(url)
-      .get(url, res => {
+    getProtocolAdapter(uri)
+      .get(options, res => {
         if (encoding) res.setEncoding(encoding)
+        console.log(res)
         const file = createWriteStream(path)
         const total = parseInt(res.headers?.['content-length'] || '0', 10)
         let current = 0

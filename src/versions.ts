@@ -97,7 +97,16 @@ export interface IVersionManifest {
   versions: IVersionInfo[]
 }
 
+export interface ISpigotVersionManifest {
+  latest: { release: string }
+  versions: string[]
+}
+
 export default class Versions {
+  private static spigotManifestVersionRegex =
+    /^<a href="(\d+\.\d+(?:\.\d)?)\.json">/gim
+
+  static #spigotManifest?: Promise<ISpigotVersionManifest>
   static #manifest?: Promise<IVersionManifest>
   static #versions?: Record<
     string,
@@ -208,5 +217,30 @@ export default class Versions {
         'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
       )
     return this.#manifest
+  }
+
+  static get spigotManifest() {
+    if (!this.#spigotManifest) {
+      this.#spigotManifest = request<string>(
+        'https://hub.spigotmc.org/versions/'
+      ).then(content => {
+        const versions = []
+        let match
+        while ((match = this.spigotManifestVersionRegex.exec(content)) !== null)
+          versions.push(match[1])
+        versions.sort((a, b) => {
+          const [aMajor, aMinor, aPatch] = a.split('.').map(v => Number(v))
+          const [bMajor, bMinor, bPatch] = b.split('.').map(v => Number(v))
+          return (
+            bMajor - aMajor || bMinor - aMinor || (bPatch || 0) - (aPatch || 0)
+          )
+        })
+        return {
+          latest: { release: versions[0] },
+          versions
+        }
+      })
+    }
+    return this.#spigotManifest
   }
 }

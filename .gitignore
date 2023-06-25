@@ -1,6 +1,7 @@
 build/
 server/
 versions.json
+buildtools/
 
 # Logs
 logs

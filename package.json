@@ -1,5 +1,5 @@
 {
-  "name": "mcserver.js",
+  "name": "@ffgflash/mcserver.js",
   "version": "1.0.0",
   "description": "",
   "main": "build/index.js",

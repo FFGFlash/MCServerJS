@@ -2,7 +2,7 @@ import path from 'path'
 
 /** The system path to the java executable installed by the user  */
 export const DEFAULT_JAVA_PATH =
-  process.env.JAVA_HOME && path.join(process.env.JAVA_HOME, 'bin')
+  (process.env.JAVA_HOME && path.join(process.env.JAVA_HOME, 'bin')) || ''
 
 export interface IOptions {
   minMemory: number
