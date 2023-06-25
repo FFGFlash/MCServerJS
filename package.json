@@ -1,17 +1,34 @@
 {
   "name": "@ffgflash/mcserver.js",
   "version": "1.1.0",
-  "description": "",
+  "license": "MIT",
+  "description": "Programatic minecraft server interface",
+  "author": "Drake Taylor <taylorda2019@gmail.com>",
+  "repository": "github:FFGFlash/MCServerJS",
+  "bugs": {
+    "url": "https://github.com/FFGFlash/MCServerJS/issues"
+  },
+  "homepage": "https://github.com/FFGFlash/MCServerJS#readme",
   "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
-    "test": "npm run build && node .",
+    "start": "npm run build && node .",
     "build": "npx tsc"
   },
-  "keywords": [],
-  "author": "Drake Taylor",
-  "license": "MIT",
+  "keywords": [
+    "minecraft",
+    "server",
+    "ts",
+    "typescript",
+    "node",
+    "js",
+    "javascript",
+    "mc",
+    "smp"
+  ],
   "devDependencies": {
     "@types/node": "^20.1.3",
     "typescript": "^5.0.4"
   }
 }
+
