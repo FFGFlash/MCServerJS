@@ -94,7 +94,7 @@ export class Server extends EventEmitter {
     this.properties = new Properties(this.prop)
   }
 
-  async downloadJar(
+  async buildJar(
     force = false,
     progressCallback?: (current: number, total: number) => void
   ) {
@@ -175,7 +175,7 @@ export class Server extends EventEmitter {
       if (!isCorrectVersion) {
         this.log('Downloading server jar...')
         try {
-          await this.downloadJar(true, (cur, tot) =>
+          await this.buildJar(true, (cur, tot) =>
             this.emit('download', jar, cur, tot)
           )
         } catch (err) {

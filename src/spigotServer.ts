@@ -45,9 +45,10 @@ export default class SpigotServer extends Server {
     )
   }
 
-  async downloadJar(
+  async buildServerJar(
     force = false,
-    progressCallback?: (current: number, total: number) => void
+    progressCallback?: (current: number, total: number) => void,
+    buildCallback?: (data: string) => void
   ) {
     const { jar, buildPath, env, buildtool, buildArgs, buildjar } = this
     if (existsSync(jar) && !force) return
@@ -62,7 +63,7 @@ export default class SpigotServer extends Server {
         windowsHide: true
       })
 
-      process.stdout.on('data', data => this.log(String(data), false))
+      process.stdout.on('data', data => buildCallback?.(String(data)))
 
       process.on('error', err => {
         reject(`Failed to build server jar. ${err.message}`)
@@ -114,8 +115,10 @@ export default class SpigotServer extends Server {
 
         this.log('Building server jar...')
         try {
-          await this.downloadJar(true, (cur, tot) =>
-            this.emit('download', jar, cur, tot)
+          await this.buildServerJar(
+            true,
+            (cur, tot) => this.emit('download', buildjar, cur, tot),
+            data => this.log(data, false)
           )
         } catch (err) {
           this.state = 'CRASHED'
