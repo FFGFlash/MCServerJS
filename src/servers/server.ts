@@ -10,10 +10,10 @@ import {
   IServerLog,
   ServerStateError,
   ServerStatus
-} from './shared'
-import { download, request } from './request'
-import Versions, { IVersion, IVersionManifest } from './versions'
-import Properties from './properties'
+} from '../shared'
+import { download, request } from '../request'
+import Versions, { IVersion, IVersionManifest } from '../versions'
+import Properties from '../properties'
 import { promisify } from 'util'
 
 const exec = promisify(execCallback)

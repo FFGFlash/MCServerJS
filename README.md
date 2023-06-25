@@ -90,10 +90,12 @@ mcserver.js [-versions] [--v <version>] [--mn <minMemory>] [--mx <maxMemory>] [-
 ## To-Do
 
 - [x] Vanilla Server
+  - [x] Load `server.properties`
+  - [ ] Type Checking `server.properties`
 - [x] Command Line Integration
-- [x] Load `server.properties`
-- [ ] Type Checking `server.properties`
-- [ ] Forge Server
-- [ ] Fabric Server
-- [ ] Spigot Server
-
+- [ ] Forge Server **[High Priority]**
+- [ ] Fabric Server **[High Priority]**
+- [x] Spigot Server
+  - [ ] Load `bukkit.yml` **[Low Priority]**
+  - [ ] Load `spigot.yml` **[Low Priority]**
+- [ ] Download Java Builds Automatically **[High Priority]**

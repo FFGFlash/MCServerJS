@@ -1,9 +1,9 @@
 import path from 'path'
 import Server from './server'
-import { DEFAULT_JAVA_PATH, IOptions, ServerStateError } from './shared'
+import { DEFAULT_JAVA_PATH, IOptions, ServerStateError } from '../shared'
 import { existsSync } from 'fs'
-import { download } from './request'
-import Versions from './versions'
+import { download } from '../request'
+import Versions from '../versions'
 import { spawn } from 'child_process'
 import { mkdir, rename } from 'fs/promises'
 

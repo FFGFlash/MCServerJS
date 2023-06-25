@@ -1,12 +1,12 @@
 import { createInterface } from 'readline/promises'
-import Server from './server'
+import Server from './servers/server'
 import { IOptions } from './shared'
 import Versions from './versions'
 
-export { default as Server } from './server'
+export { default as Server } from './servers/server'
 export { default as Versions } from './versions'
 export { default as Properties } from './properties'
-export { default as SpigotServer } from './spigotServer'
+export { default as SpigotServer } from './servers/spigotServer'
 
 if (require.main === module) {
   const parseArg = (arg: string) => {
