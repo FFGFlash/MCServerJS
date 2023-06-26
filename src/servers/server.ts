@@ -62,13 +62,14 @@ export class Server extends EventEmitter {
   properties: Properties
 
   protected process?: ChildProcess
-  static PrefixPattern = /(\[\d+:\d+:\d+\] \[(?:ServerMain|Server thread)\/)/g
+  static PrefixPattern =
+    /(\[\d+:\d+:\d+\] \[(?:ServerMain|Server thread|main)\/)/g
   static DonePattern =
-    /\[\d+:\d+:\d+\] \[(ServerMain|Server thread)\/INFO\]: Done \([^)]+\)!/i
+    /\[\d+:\d+:\d+\] \[(ServerMain|Server thread|main)\/INFO\]: Done \([^)]+\)!/i
   static StopPattern =
-    /\[\d+:\d+:\d+\] \[(ServerMain|Server thread)\/INFO\]: Stopping server/i
+    /\[\d+:\d+:\d+\] \[(ServerMain|Server thread|main)\/INFO\]: Stopping server/i
   static EulaPattern =
-    /\[\d+:\d+:\d+\] \[(ServerMain|Server thread)\/INFO\]: You need to agree to the EULA in order to run the server\. Go to eula.txt for more info\.(?:\n|\r\n)?/i
+    /\[\d+:\d+:\d+\] \[(ServerMain|Server thread|main)\/INFO\]: You need to agree to the EULA in order to run the server\. Go to eula\.txt for more info\.(?:\n|\r\n)?/i
   static WarnPattern = /\/WARN\]/i
   static ErrorPattern = /\/ERROR\]/i
 
@@ -83,7 +84,7 @@ export class Server extends EventEmitter {
   constructor(version?: string, options?: Partial<IOptions>) {
     super()
     const { minMemory, maxMemory, softMaxMemory, javaPath, path } =
-      Object.assign(Server.DefaultOptions, options)
+      Object.assign(structuredClone(Server.DefaultOptions), options)
 
     this.version = version
     this.minMemory = minMemory
@@ -94,7 +95,7 @@ export class Server extends EventEmitter {
     this.properties = new Properties(this.prop)
   }
 
-  async buildJar(
+  async downloadJar(
     force = false,
     progressCallback?: (current: number, total: number) => void
   ) {
@@ -175,7 +176,7 @@ export class Server extends EventEmitter {
       if (!isCorrectVersion) {
         this.log('Downloading server jar...')
         try {
-          await this.buildJar(true, (cur, tot) =>
+          await this.downloadJar(true, (cur, tot) =>
             this.emit('download', jar, cur, tot)
           )
         } catch (err) {

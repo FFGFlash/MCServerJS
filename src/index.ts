@@ -7,6 +7,7 @@ export { default as Server } from './servers/server'
 export { default as Versions } from './versions'
 export { default as Properties } from './properties'
 export { default as SpigotServer } from './servers/spigotServer'
+export { default as FabricServer } from './servers/fabricServer'
 
 if (require.main === module) {
   const parseArg = (arg: string) => {

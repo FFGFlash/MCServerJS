@@ -25,14 +25,14 @@ export default class SpigotServer extends Server {
 
   constructor(version?: string, options?: Partial<ISpigotOptions>) {
     const { buildPath, ...serverOptions } = Object.assign(
-      SpigotServer.DefaultOptions,
+      structuredClone(SpigotServer.DefaultOptions),
       options
     )
     super(version, serverOptions)
     this.buildPath = buildPath
   }
 
-  async downloadBuildTools(
+  async downloadJar(
     force = false,
     progressCallback?: (current: number, total: number) => void
   ) {
@@ -55,7 +55,7 @@ export default class SpigotServer extends Server {
     const versions = await Versions.spigotManifest
     if (!this.version) this.version = versions.latest.release
     if (!existsSync(buildtool) || force)
-      await this.downloadBuildTools(force, progressCallback)
+      await this.downloadJar(force, progressCallback)
     const buildPromise = new Promise<void>((resolve, reject) => {
       const process = spawn('java', buildArgs, {
         cwd: buildPath,
@@ -104,7 +104,7 @@ export default class SpigotServer extends Server {
         if (!existsSync(buildjar)) {
           this.log('Downloading build tools...')
           try {
-            await this.downloadBuildTools(true, (cur, tot) =>
+            await this.downloadJar(true, (cur, tot) =>
               this.emit('download', buildjar, cur, tot)
             )
           } catch (err) {

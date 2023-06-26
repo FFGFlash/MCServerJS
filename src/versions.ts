@@ -92,6 +92,49 @@ export interface IVersionInfo {
   complianceLevel: 0 | 1
 }
 
+export interface IFabricGame {
+  version: string
+  stable: boolean
+}
+
+export interface IFabricMapping {
+  gameVersion: string
+  seperator: string
+  build: number
+  maven: string
+  version: string
+  stable: boolean
+}
+
+export interface IFabricIntermediary {
+  maven: string
+  version: string
+  stable: boolean
+}
+
+export interface IFabricLoader {
+  seperator: string
+  build: number
+  maven: string
+  version: string
+  stable: boolean
+}
+
+export interface IFabricInstaller {
+  url: string
+  maven: string
+  version: string
+  stable: boolean
+}
+
+export interface IFabricVersion {
+  game: IFabricGame[]
+  mappings: IFabricMapping[]
+  loader: IFabricLoader[]
+  intermediary: IFabricIntermediary[]
+  installer: IFabricInstaller[]
+}
+
 export interface IVersionManifest {
   latest: { release: string; snapshot: string }
   versions: IVersionInfo[]
@@ -102,10 +145,24 @@ export interface ISpigotVersionManifest {
   versions: string[]
 }
 
+export interface IFabricVersionManifest {
+  latest: {
+    release: {
+      game: string
+      mapping: string
+      intermediary: string
+      loader: string
+      installer: string
+    }
+  }
+  versions: IFabricVersion
+}
+
 export default class Versions {
   private static spigotManifestVersionRegex =
     /^<a href="(\d+\.\d+(?:\.\d)?)\.json">/gim
 
+  static #fabricManifest?: Promise<IFabricVersionManifest>
   static #spigotManifest?: Promise<ISpigotVersionManifest>
   static #manifest?: Promise<IVersionManifest>
   static #versions?: Record<
@@ -243,4 +300,33 @@ export default class Versions {
     }
     return this.#spigotManifest
   }
+
+  static get fabricManifest() {
+    if (!this.#fabricManifest) {
+      this.#fabricManifest = request<IFabricVersion>(
+        'https://meta.fabricmc.net/v2/versions'
+      ).then(versions => {
+        const manifest: IFabricVersionManifest = {
+          latest: {
+            release: {
+              game: versions.game.filter(v => v.stable)[0]?.version || '',
+              mapping:
+                versions.mappings.filter(v => v.stable)[0]?.version || '',
+              intermediary:
+                versions.intermediary.filter(v => v.stable)[0]?.version || '',
+              installer:
+                versions.installer.filter(v => v.stable)[0]?.version || '',
+              loader: versions.loader.filter(v => v.stable)[0]?.version || ''
+            }
+          },
+          versions
+        }
+
+        return manifest
+      })
+    }
+    return this.#fabricManifest
+  }
+
+  static getFabricLoaders(version: string) {}
 }
