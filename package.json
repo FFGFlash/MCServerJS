@@ -1,6 +1,6 @@
 {
   "name": "@ffgflash/mcserver.js",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "license": "MIT",
   "description": "Programatic minecraft server interface",
   "author": "Drake Taylor <taylorda2019@gmail.com>",
@@ -33,4 +33,3 @@
     "typescript": "^5.0.4"
   }
 }
-
