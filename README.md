@@ -94,7 +94,7 @@ mcserver.js [-versions] [--v <version>] [--mn <minMemory>] [--mx <maxMemory>] [-
   - [ ] Type Checking `server.properties`
 - [x] Command Line Integration
 - [ ] Forge Server **[High Priority]**
-- [ ] Fabric Server **[High Priority]**
+- [x] Fabric Server
 - [x] Spigot Server
   - [ ] Load `bukkit.yml` **[Low Priority]**
   - [ ] Load `spigot.yml` **[Low Priority]**
